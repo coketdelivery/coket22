@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>걸코의 분실 택배 추적기</title>
+  <style>
+    body { font-family: 'Nanum Gothic', sans-serif; background: url('warehouse.jpg') no-repeat center center fixed; background-size: cover; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+    .game-container { background: rgba(255,255,255,0.9); border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); width: 90%; max-width: 700px; padding: 20px; position: relative; }
+    h1 { text-align: center; color: #333; margin-top: 0; }
+    .scene-text { white-space: pre-line; line-height: 1.6; margin-bottom: 20px; color: #444; transition: opacity 0.4s ease; }
+    .options { display: flex; flex-direction: column; gap: 12px; }
+    .options button { padding: 12px 18px; font-size: 1rem; border: none; border-radius: 6px; background: #1976d2; color: #fff; cursor: pointer; transition: background 0.2s; }
+    .options button:hover { background: #1565c0; }
+    #toggle-music, .restart-btn { position: absolute; padding: 6px 10px; border: none; border-radius: 4px; background: rgba(0,0,0,0.5); color: #fff; cursor: pointer; }
+    #toggle-music { top: 10px; right: 10px; }
+    .restart-btn { bottom: 10px; right: 50%; transform: translateX(50%); }
+  </style>
+</head>
+<body>
+  <audio id="bgm" src="mystery_bgm.mp3" loop autoplay></audio>
+  <button id="toggle-music">🔊 음악 끄기</button>
+  <div class="game-container">
+    <h1>걸코의 분실 택배 추적기</h1>
+    <div id="scene" class="scene-text"></div>
+    <div id="options" class="options"></div>
+    <button id="restart" class="restart-btn" style="display:none;">처음으로</button>
+  </div>
+  <script>
+    const scenes = {
+      start: { text: `걸코, 오늘도 분실 택배 사건을 맡았습니다.\n물류센터 풍경은 적막하지만 긴장감이 감돕니다.\n첫 단서는 어디에서 찾을까요?`, options: [
+        { text: '감시 카메라 확인', next: 'scene1' },
+        { text: '센터 입구 순찰', next: 'scene2' }
+      ]},
+      scene1: { text: `감시실에 들어서니 모니터 수십 대가 당신을 맞습니다.\n최근 24시간 기록을 볼까요?`, options: [
+        { text: '최근 1시간 영상', next: 'scene3' },
+        { text: '전체 24시간', next: 'scene4' }
+      ]},
+      scene2: { text: `입구를 지나자 택배 차량이 서 있습니다.\n차량 운전자를 만나겠습니까?`, options: [
+        { text: '운전자 인터뷰', next: 'scene5' },
+        { text: '차량 검사', next: 'scene6' }
+      ]},
+      scene3: { text: `최근 1시간 영상에 직원 A의 이상 행동이 포착됩니다.\nA를 추적할까요?`, options: [
+        { text: 'A 호출', next: 'scene7' },
+        { text: '행동 분석', next: 'scene8' }
+      ]},
+      scene4: { text: `24시간 전체 영상에서 물류센터 뒷문이 열리는 장면이 보입니다.\n뒷문으로 가보겠습니까?`, options: [
+        { text: '뒷문 접근', next: 'scene9' },
+        { text: '문 잠금 로그 확인', next: 'scene10' }
+      ]},
+      scene5: { text: `운전자는 “상자는 분실 전날까지 이상 없었다”고 진술합니다.\n더 깊게 묻겠습니까?`, options: [
+        { text: '운전자 기록 확인', next: 'scene11' },
+        { text: '운행 경로 재현', next: 'scene12' }
+      ]},
+      scene6: { text: `차량 트렁크에서 비슷한 상자 흔적이 남아 있습니다.\n지문을 채취할까요?`, options: [
+        { text: '지문 채취', next: 'scene13' },
+        { text: '상자 내부 확인', next: 'scene14' }
+      ]},
+      scene7: { text: `A는 긴장한 듯 떨고 있습니다.\n심문을 시작할까요?`, options: [
+        { text: '심문', next: 'scene15' },
+        { text: '휴대폰 확인', next: 'scene16' }
+      ]},
+      scene8: { text: `행동 분석 결과, A가 특정 시간에 창고에 머문 기록이 있습니다.\n창고로 이동할까요?`, options: [
+        { text: '창고 이동', next: 'scene17' },
+        { text: 'CCTV 재검토', next: 'scene18' }
+      ]},
+      scene9: { text: `뒷문은 잠겨 있지만 잠금 해제 기록이 있습니다.\n로그를 살펴보겠습니까?`, options: [
+        { text: '로그 확인', next: 'scene19' },
+        { text: '문 조사', next: 'scene20' }
+      ]},
+      scene10: { text: `잠금 로그에는 관리자 D가 해제했다고 합니다.\nD를 만나볼까요?`, options: [
+        { text: 'D 인터뷰', next: 'scene21' },
+        { text: '관리자 기록 확인', next: 'scene22' }
+      ]},
+      scene11: { text: `운전 기록에서 심야 정차가 있었습니다.\n왜 멈췄을까요?`, options: [
+        { text: '현장 조사', next: 'scene23' },
+        { text: '차량 블랙박스 확인', next: 'scene24' }
+      ]},
+      scene12: { text: `운행 경로 재현 중 도로 공사 기록이 확인됩니다.\n공사 구간을 방문할까요?`, options: [
+        { text: '공사장 방문', next: 'scene25' },
+        { text: '대체 경로 조사', next: 'scene26' }
+      ]},
+      scene13: { text: `지문은 E 직원의 것으로 확인됩니다.\nE를 조사할까요?`, options: [
+        { text: 'E 호출', next: 'scene27' },
+        { text: '다른 증거 확인', next: 'scene28' }
+      ]},
+      scene14: { text: `상자 내부 GPS 장치가 꺼져 있습니다.\n장치를 재가동할까요?`, options: [
+        { text: '재가동', next: 'scene29' },
+        { text: '장치 회수', next: 'scene30' }
+      ]},
+      scene15: { text: `심문 중 A는 자신이 무죄라고 주장합니다.\n다른 단서를 찾을까요?`, options: [
+        { text: '사물함 조사', next: 'scene31' },
+        { text: '로그 재분석', next: 'scene32' }
+      ]},
+      scene16: { text: `A 휴대폰에서 창고 열쇠 위치가 찍힌 사진이 발견됩니다.\n사진을 분석할까요?`, options: [
+        { text: '사진 확대', next: 'scene33' },
+        { text: 'GPS 기록 확인', next: 'scene34' }
+      ]},
+      scene17: { text: `창고 진입 시 강력한 LED 조명이 켜집니다.\n어두운 구석을 조사할까요?`, options: [
+        { text: '구석 조사', next: 'scene35' },
+        { text: '상단 선반 확인', next: 'scene36' }
+      ]},
+      scene18: { text: `CCTV 분석 중 B가 누군가에게 상자를 건네는 장면이 보입니다.\nB를 추적할까요?`, options: [
+        { text: 'B 호출', next: 'scene37' },
+        { text: '영상 기록 확보', next: 'scene38' }
+      ]},
+      scene19: { text: `로그에서 해킹 흔적이 포착됩니다.\n보안팀에 문의할까요?`, options: [
+        { text: '문의', next: 'scene39' },
+        { text: '포렌식 의뢰', next: 'scene40' }
+      ]},
+      scene20: { text: `뒷문 자물쇠에 특수 도구 자국이 있습니다.\n도구를 찾을까요?`, options: [
+        { text: '도구 수색', next: 'scene41' },
+        { text: '자물쇠 복제', next: 'scene42' }
+      ]},
+      scene21: { text: `D는 야간 근무였지만 CCTV를 확인하지 못했다고 합니다.`, options:[{ text:'추가 확인', next:'scene43'},{ text:'다른 기록', next:'scene44'}]},
+      scene22: { text: `관리자 기록에 비정상적인 접근이 있습니다.`, options:[{ text:'접근 로그', next:'scene45'},{ text:'사물함 조사', next:'scene31'}]},
+      scene23: { text: `공사장에선 택배 파손 흔적이 발견됩니다.`, options:[{ text:'현장 보고서', next:'scene46'},{ text:'운전자 인터뷰', next:'scene5'}]},
+      scene24: { text: `블랙박스 영상에서 미심쩍은 인물이 포착되었습니다.`, options:[{ text:'추적', next:'scene47'},{ text:'영상 확보', next:'scene38'}]},
+      scene25: { text: `공사장 관리자에게서 택배 흔적을 들었습니다.`, options:[{ text:'관리자 인터뷰', next:'scene48'},{ text:'현장 사진', next:'scene36'}]},
+      scene26: { text: `대체 경로 확인 중 우회로에 이상이 있습니다.`, options:[{ text:'조사', next:'scene49'},{ text:'로그 재검토', next:'scene4'}]},
+      scene27: { text: `E는 운반 담당이 아니었다고 합니다.`, options:[{ text:'증거 제시', next:'scene28'},{ text:'진술 재확인', next:'scene43'}]},
+      scene28: { text: `추가 증거로 라벨을 확보했습니다.`, options:[{ text:'라벨 분석', next:'scene50'},{ text:'고객 문의', next:'scene35'}]},
+      scene29: { text: `GPS 재가동 후 위치 업데이트.`, options:[{ text:'추적', next:'scene29'},{ text:'장치 회수', next:'scene30'}]},
+      scene30: { text: `데이터 일부 복구 완료.`, options:[{ text:'분석', next:'scene32'},{ text:'보관', next:'scene6'}]},
+      scene31: { text: `사물함에서 로그 발견.`, options:[{ text:'분석', next:'scene45'},{ text:'증거', next:'scene24'}]},
+      scene32: { text: `포렌식 결과 조작 흔적.`, options:[{ text:'추궁', next:'scene17'},{ text:'통보', next:'scene39'}]},
+      scene33: { text: `USB 위치 확인.`, options:[{ text:'회수', next:'scene41'},{ text:'기록', next:'scene23'}]},
+      scene34: { text: `오류 사라짐.`, options:[{ text:'재추적', next:'scene29'},{ text:'다른 단서', next:'scene2'}]},
+      scene35: { text: `고객 감사 인사.`, options:[{ text:'종결', next:'scene50'},{ text:'엔딩', next:'scene50'}]},
+      scene36: { text: `미확인 봉투 발견.`, options:[{ text:'개봉', next:'scene47'},{ text:'제거', next:'scene18'}]},
+      scene37: { text: `B는 모른다고.`, options:[{ text:'탐지', next:'scene15'},{ text:'증거', next:'scene24'}]},
+      scene38: { text: `영상 확보.`, options:[{ text:'분석', next:'scene32'},{ text:'재생', next:'scene4'}]},
+      scene39: { text: `보안팀 출동.`, options:[{ text:'동행', next:'scene9'},{ text:'대기', next:'scene50'}]},
+      scene40: { text: `강력 증거 확보.`, options:[{ text:'체포', next:'scene29'},{ text:'보고서', next:'scene50'}]},
+      scene41: { text: `도구 확보.`, options:[{ text:'해제', next:'scene38'},{ text:'분석', next:'scene39'}]},
+      scene42: { text: `진입 성공.`, options:[{ text:'조사', next:'scene17'},{ text:'추가', next:'scene19'}]},
+      scene43: { text: `진술 일치.`, options:[{ text:'단서', next:'scene23'},{ text:'기록', next:'scene50'}]},
+      scene44: { text: `이상 신호.`, options:[{ text:'분석', next:'scene19'},{ text:'확인', next:'scene14'}]},
+      scene45: { text: `IP 기록.`, options:[{ text:'추적', next:'scene9'},{ text:'보존', next:'scene50'}]},
+      scene46: { text: `파손 흔적.`, options:[{ text:'분석', next:'scene13'},{ text:'촬영', next:'scene38'}]},
+      scene47: { text: `추격 시작.`, options:[{ text:'추격', next:'scene29'},{ text:'영상', next:'scene38'}]},
+      scene48: { text: `새 증언 확보.`, options:[{ text:'분석', next:'scene32'},{ text:'종결', next:'scene50'}]},
+      scene49: { text: `우회로 차량.`, options:[{ text:'조사', next:'scene29'},{ text:'로그', next:'scene10'}]},
+      scene50: { text: `🎉 최종 보고서:\n걸코의 날카로운 추리로 분실 택배가 무사히 돌아갔습니다!`, options:[
+        { text: '다시 플레이', next: 'start' },
+        { text: '게임 종료', next: null }
+      ]}
+    };
+    const sceneEl = document.getElementById('scene');
+    const optionsEl = document.getElementById('options');
+    const restartBtn = document.getElementById('restart');
+    const musicBtn = document.getElementById('toggle-music');
+    const bgm = document.getElementById('bgm');
+
+    function renderScene(key) {
+      const sc = scenes[key]; if (!sc) return;
+      sceneEl.style.opacity = 0;
+      setTimeout(() => {
+        sceneEl.textContent = sc.text;
+        optionsEl.innerHTML = '';
+        sc.options.forEach(opt => {
+          const btn = document.createElement('button'); btn.textContent = opt.text;
+          if (opt.next) btn.addEventListener('click', () => renderScene(opt.next));
+          optionsEl.appendChild(btn);
+        });
+        restartBtn.style.display = sc.options.length === 0 ? 'block' : 'none';
+        sceneEl.style.opacity = 1;
+      }, 300);
+    }
+
+    restartBtn.addEventListener('click', () => renderScene('start'));
+    musicBtn.addEventListener('click', () => {
+      if (bgm.paused) { bgm.play(); musicBtn.textContent = '🔊 음악 끄기'; }
+      else { bgm.pause(); musicBtn.textContent = '🔇 음악 켜기'; }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => renderScene('start'));
+  </script>
+</body>
+</html>
